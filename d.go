@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -93,14 +92,9 @@ func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symbol
 	}
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println("Read error:", err)
-		return
-	}
 	var candleRes CandleResponse
-	if err := json.Unmarshal(body, &candleRes); err != nil {
-		fmt.Println("JSON Unmarshal error:", err)
+	if err := json.NewDecoder(res.Body).Decode(&candleRes); err != nil {
+		fmt.Println("JSON Decode error:", err)
 		return
 	}
 
@@ -150,8 +144,6 @@ func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symbol
 
 // Only for Derivatives (FNO) instruments
 func getHistoricalOIData(apikey string, jwtToken string, exchange ExchangeType, symboltoken string, interval Interval, fromdate string, todate string) {
-	// https://apiconnect.angelone.in/rest/secure/angelbroking/historical/v1/getOIData
-
 	url := "https://apiconnect.angelone.in/rest/secure/angelbroking/historical/v1/getOIData"
 	method := "POST"
 
@@ -178,7 +170,7 @@ func getHistoricalOIData(apikey string, jwtToken string, exchange ExchangeType, 
 	req.Header.Add("X-SourceID", "WEB")
 	req.Header.Add("X-ClientLocalIP", "127.0.0.1")      // Replace with actual if needed
 	req.Header.Add("X-ClientPublicIP", "198.168.0.1")   // Replace with actual if needed
-	req.Header.Add("X-MACAddress", "00:0a:95:9d:68:16") // Replace with actual if needed
+	req.Header.Add("X-MACAddress", "00:00:00:00:00:00") // Replace with actual if needed
 	req.Header.Add("X-PrivateKey", apikey)
 
 	res, err := client.Do(req)
@@ -188,10 +180,9 @@ func getHistoricalOIData(apikey string, jwtToken string, exchange ExchangeType, 
 	}
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
 	var oiRes OIResponse
-	if err := json.Unmarshal(body, &oiRes); err != nil {
-		fmt.Println("JSON Unmarshal error:", err)
+	if err := json.NewDecoder(res.Body).Decode(&oiRes); err != nil {
+		fmt.Println("JSON Decode error:", err)
 		return
 	}
 
