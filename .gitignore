@@ -6,7 +6,6 @@
 *.dylib
 *.test
 *.out
-dictionary.json
 # Build output directories
 /bin/
 /pkg/
@@ -44,3 +43,5 @@ Thumbs.db
 # Environment and local config
 .env
 .env.local
+
+*.json
