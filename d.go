@@ -43,11 +43,16 @@ type CandleResponse struct {
 	Data      [][]any `json:"data"`
 }
 
+type OIData struct {
+	Time string  `json:"time"`
+	Oi   float64 `json:"oi"`
+}
+
 type OIResponse struct {
-	Status    bool    `json:"status"`
-	Message   string  `json:"message"`
-	ErrorCode string  `json:"errorcode"`
-	Data      [][]any `json:"data"`
+	Status    bool     `json:"status"`
+	Message   string   `json:"message"`
+	ErrorCode string   `json:"errorcode"`
+	Data      []OIData `json:"data"`
 }
 
 func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symboltoken string, interval Interval, fromdate string, todate string) {
@@ -184,58 +189,44 @@ func getHistoricalOIData(apikey string, jwtToken string, exchange ExchangeType, 
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println("Read error:", err)
+	var oiRes OIResponse
+	if err := json.Unmarshal(body, &oiRes); err != nil {
+		fmt.Println("JSON Unmarshal error:", err)
 		return
 	}
-	fmt.Println(string(body))
 
-	// var candleRes CandleResponse
-	// if err := json.Unmarshal(body, &candleRes); err != nil {
-	// 	fmt.Println("JSON Unmarshal error:", err)
-	// 	return
-	// }
+	if !oiRes.Status {
+		fmt.Println("API returned error:", oiRes.Message)
+		return
+	}
 
-	// if !candleRes.Status {
-	// 	fmt.Println("API returned error:", candleRes.Message)
-	// 	return
-	// }
+	csvFile, err := os.Create("oi_data.csv")
+	if err != nil {
+		fmt.Println("File create error:", err)
+		return
+	}
+	defer csvFile.Close()
 
-	// csvFile, err := os.Create("oi_data.csv")
-	// if err != nil {
-	// 	fmt.Println("File create error:", err)
-	// 	return
-	// }
-	// defer csvFile.Close()
+	writer := csv.NewWriter(csvFile)
+	defer writer.Flush()
 
-	// writer := csv.NewWriter(csvFile)
-	// defer writer.Flush()
+	// Write Header
+	header := []string{"Timestamp", "OpenInterest"}
+	if err := writer.Write(header); err != nil {
+		fmt.Println("CSV Header write error:", err)
+		return
+	}
 
-	// // Write Header
-	// header := []string{"Timestamp", "Open", "High", "Low", "Close", "Volume", "OpenInterest"}
-	// if err := writer.Write(header); err != nil {
-	// 	fmt.Println("CSV Header write error:", err)
-	// 	return
-	// }
+	for _, row := range oiRes.Data {
+		record := []string{
+			row.Time,
+			strconv.FormatFloat(row.Oi, 'f', -1, 64),
+		}
+		if err := writer.Write(record); err != nil {
+			fmt.Println("CSV Row write error:", err)
+			return
+		}
+	}
 
-	// for _, row := range candleRes.Data {
-	// 	record := make([]string, len(row))
-	// 	for i, col := range row {
-	// 		// Convert interface{} to string
-	// 		switch v := col.(type) {
-	// 		case float64:
-	// 			// Format float without scientific notation (-1 auto precision)
-	// 			record[i] = strconv.FormatFloat(v, 'f', -1, 64)
-	// 		default:
-	// 			record[i] = fmt.Sprintf("%v", col)
-	// 		}
-	// 	}
-	// 	if err := writer.Write(record); err != nil {
-	// 		fmt.Println("CSV Row write error:", err)
-	// 		return
-	// 	}
-	// }
-
-	// fmt.Println("Saved OI response to oi_data.csv")
-
+	fmt.Println("Saved OI response to oi_data.csv")
 }

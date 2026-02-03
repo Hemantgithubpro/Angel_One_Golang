@@ -72,7 +72,7 @@ func main() {
 	exchange:= NFO
 	symboltoken := "48178"
 	interval := FifteenMin
-	fromdate := "2026-01-01 00:00"
-	todate := "2026-02-01 23:59"
+	fromdate := "2026-01-30 12:00"
+	todate := "2026-02-01 12:00"
 	getHistoricalOIData(apikey, jwtToken, exchange, symboltoken, interval, fromdate, todate)
 }
