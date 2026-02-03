@@ -38,27 +38,24 @@ func main() {
 
 
 
-	// // Create streaming request
-	// // Using Nifty 50 token (99926000) on NSE (ExchangeType 1) as example
-	// req := StreamRequest{
-	// 	CorrelationID: "test_stream_123",
-	// 	Action:        1, // Subscribe
-	// 	Params: StreamParams{
-	// 		Mode: 1, // LTP Mode
-	// 		TokenList: []TokenInfo{
-	// 			{
-	// 				ExchangeType: 1,                    // NSE
-	// 				Tokens:       []string{"99926000"}, // Nifty 50
-	// 			},
-	// 		},
-	// 	},
-	// }
+	// Create streaming request
+	// Using Nifty 50 token (99926000) on NSE (ExchangeType 1) as example
+	req := StreamRequest{
+		CorrelationID: "test_stream_123",
+		Action:        1, // Subscribe
+		Params: StreamParams{
+			Mode: 1, // LTP Mode
+			TokenList: []TokenInfo{
+				{
+					ExchangeType: 1,                    // NSE
+					Tokens:       []string{"99926000"}, // Nifty 50
+				},
+			},
+		},
+	}
 
-	// fmt.Println("Starting stream...")
-	// err = subscribeAndStream(conn, req)
-	// if err != nil {
-	// 	fmt.Printf("Stream error: %v\n", err)
-	// }
+	fmt.Println("Starting stream...")
+	
 
-	// g(jwtToken, apikey, clientCode, feedToken)
+	g(jwtToken, apikey, clientCode, feedToken)
 }

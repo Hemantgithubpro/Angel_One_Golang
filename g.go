@@ -5,14 +5,18 @@
 package main
 
 import (
-	"github.com/gorilla/websocket"
-	"github.com/joho/godotenv"
+	"bytes"
+	"encoding/binary"
+	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
-	"fmt"
+
+	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 )
 
 // Config represents target URLs
@@ -91,10 +95,9 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 			Mode: 1, // LTP Mode
 			TokenList: []TokenInfo{
 				{
-					ExchangeType: 1, // NSE
+					ExchangeType: 1,                    // NSE
 					Tokens:       []string{"99926000"}, // Nifty 50
 				},
-				
 			},
 		},
 	}
@@ -114,14 +117,17 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 	go func() {
 		defer close(done)
 		for {
-			_, message, err := conn.ReadMessage()
+			messageType, message, err := conn.ReadMessage()
 			if err != nil {
 				log.Println("Read error:", err)
 				return
 			}
-			// In a real app, you would parse the binary message here
-			
-			log.Printf("Received message of %d bytes", len(message))
+
+			if messageType == websocket.TextMessage {
+				log.Printf("Received Text: %s", string(message))
+			} else if messageType == websocket.BinaryMessage {
+				parseBinaryResponse(message)
+			}
 		}
 	}()
 
@@ -164,4 +170,125 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 			return
 		}
 	}
+}
+
+func parseBinaryResponse(data []byte) {
+	if len(data) == 0 {
+		return
+	}
+
+	mode := data[0]
+	// exchangeType := data[1]
+	// To distinguish currency for divisor, we might need exchangeType.
+	// 1=nse_cm, 2=nse_fo, 3=bse_cm, 4=bse_fo, 5=mcx_fo, 7=ncx_fo, 13=cde_fo
+	// For simplicity using 100.0 divisor. Real implementation should check ExchangeType 13.
+
+	switch mode {
+	case 1: // LTP Mode
+		if len(data) != 51 {
+			log.Printf("Invalid LTP packet size: %d", len(data))
+			return
+		}
+		parseLTPPacket(data)
+	case 2: // Quote Mode
+		if len(data) != 123 {
+			log.Printf("Invalid Quote packet size: %d", len(data))
+			return
+		}
+		parseQuotePacket(data)
+	case 3: // Snap Quote Mode
+		if len(data) != 379 {
+			log.Printf("Invalid SnapQuote packet size: %d", len(data))
+			return
+		}
+		parseSnapQuotePacket(data)
+	default:
+		log.Printf("Unknown Subscription Mode: %d", mode)
+	}
+}
+
+func parseLTPPacket(data []byte) {
+	exchangeType := data[1]
+	token := string(bytes.Trim(data[2:27], "\x00"))
+	seqNum := int64(binary.LittleEndian.Uint64(data[27:35]))
+	exchangeTime := int64(binary.LittleEndian.Uint64(data[35:43]))
+	ltp := int64(binary.LittleEndian.Uint64(data[43:51]))
+
+	divisor := 100.0
+	if exchangeType == 13 {
+		divisor = 10000000.0
+	}
+	realLTP := float64(ltp) / divisor
+	tm := time.UnixMilli(exchangeTime)
+
+	fmt.Printf("[LTP] Token: %s | Exch: %d | Time: %s | Price: %.2f | Seq: %d\n",
+		token, exchangeType, tm.Format("15:04:05.000"), realLTP, seqNum)
+}
+
+func parseQuotePacket(data []byte) {
+	// Re-use headers from LTP part
+	exchangeType := data[1]
+	token := string(bytes.Trim(data[2:27], "\x00"))
+	// seqNum := int64(binary.LittleEndian.Uint64(data[27:35]))
+	exchangeTime := int64(binary.LittleEndian.Uint64(data[35:43]))
+	ltp := int64(binary.LittleEndian.Uint64(data[43:51]))
+
+	// Additional Quote Fields
+	// lastTradedQty := int64(binary.LittleEndian.Uint64(data[51:59]))
+	avgTradedPrice := int64(binary.LittleEndian.Uint64(data[59:67]))
+	volTraded := int64(binary.LittleEndian.Uint64(data[67:75]))
+	totalBuyQty := mathFloat64frombits(binary.LittleEndian.Uint64(data[75:83]))
+	totalSellQty := mathFloat64frombits(binary.LittleEndian.Uint64(data[83:91]))
+	openPrice := int64(binary.LittleEndian.Uint64(data[91:99]))
+	highPrice := int64(binary.LittleEndian.Uint64(data[99:107]))
+	lowPrice := int64(binary.LittleEndian.Uint64(data[107:115]))
+	closePrice := int64(binary.LittleEndian.Uint64(data[115:123]))
+
+	divisor := 100.0
+	if exchangeType == 13 {
+		divisor = 10000000.0
+	}
+
+	tm := time.UnixMilli(exchangeTime)
+
+	fmt.Printf("[QUOTE] Token: %s | Time: %s | LTP: %.2f | Open: %.2f | High: %.2f | Low: %.2f | Close: %.2f | Vol: %d | BuyQ: %.0f | SellQ: %.0f | ATP: %.2f\n",
+		token, tm.Format("15:04:05"),
+		float64(ltp)/divisor,
+		float64(openPrice)/divisor,
+		float64(highPrice)/divisor,
+		float64(lowPrice)/divisor,
+		float64(closePrice)/divisor,
+		volTraded, totalBuyQty, totalSellQty, float64(avgTradedPrice)/divisor)
+}
+
+func parseSnapQuotePacket(data []byte) {
+	// Contains everything from Quote, plus more
+	// Just reusing Quote parsing for the first part could work, but let's just parse the extra fields for now
+	// or treat it similarly.
+	// For brevity, just calling parseQuotePacket which will print the first part.
+	// Note: In real app, we'd extract the common parsing logic.
+
+	parseQuotePacket(data[0:123]) // Print the Quote part
+
+	// Extra SnapQuote fields start at 147 (after best 5 data which is 200 bytes)
+	// Best 5 Data: 147 to 347 (200 bytes)
+	// Upper Circuit: 347
+	upperCircuit := int64(binary.LittleEndian.Uint64(data[347:355]))
+	lowerCircuit := int64(binary.LittleEndian.Uint64(data[355:363]))
+	high52 := int64(binary.LittleEndian.Uint64(data[363:371]))
+	low52 := int64(binary.LittleEndian.Uint64(data[371:379]))
+
+	// Assuming exchange type is same as initial byte
+	divisor := 100.0
+	if data[1] == 13 {
+		divisor = 10000000.0
+	}
+
+	fmt.Printf("\t[SNAP] Upper: %.2f | Lower: %.2f | 52High: %.2f | 52Low: %.2f\n",
+		float64(upperCircuit)/divisor, float64(lowerCircuit)/divisor,
+		float64(high52)/divisor, float64(low52)/divisor)
+}
+
+func mathFloat64frombits(b uint64) float64 {
+	return math.Float64frombits(b)
 }
