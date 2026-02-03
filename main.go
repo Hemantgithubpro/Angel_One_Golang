@@ -40,22 +40,31 @@ func main() {
 
 	// Create streaming request
 	// Using Nifty 50 token (99926000) on NSE (ExchangeType 1) as example
-	req := StreamRequest{
-		CorrelationID: "test_stream_123",
-		Action:        1, // Subscribe
-		Params: StreamParams{
-			Mode: 1, // LTP Mode
-			TokenList: []TokenInfo{
-				{
-					ExchangeType: 1,                    // NSE
-					Tokens:       []string{"99926000"}, // Nifty 50
-				},
-			},
-		},
-	}
+	// req := StreamRequest{
+	// 	CorrelationID: "test_stream_123",
+	// 	Action:        1, // Subscribe
+	// 	Params: StreamParams{
+	// 		Mode: 1, // LTP Mode
+	// 		TokenList: []TokenInfo{
+	// 			{
+	// 				ExchangeType: 1,                    // NSE
+	// 				Tokens:       []string{"99926000"}, // Nifty 50
+	// 			},
+	// 		},
+	// 	},
+	// }
 
-	fmt.Println("Starting stream...")
+	// fmt.Println("Starting stream...")
 	
 
-	g(jwtToken, apikey, clientCode, feedToken)
+	// g(jwtToken, apikey, clientCode, feedToken)
+
+	clientCode = clientCode+feedToken // just to avoid unused variable error
+	exchange := NSE
+	symboltoken := "99926000"
+	interval := OneMin
+	fromdate := "2026-01-09"
+	todate := "2026-01-31"
+	getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
+
 }

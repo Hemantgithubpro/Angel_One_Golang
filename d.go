@@ -9,7 +9,33 @@ import (
 	"strings"
 )
 
-func getCandleData(apikey string, jwtToken string, exchange string, symboltoken string, interval string, fromdate string, todate string) {
+type ExchangeType string
+
+const (
+	NSE ExchangeType = "NSE" // National Stock Exchange
+	NFO ExchangeType = "NFO" // NSE Futures & Options
+	BSE ExchangeType = "BSE" // Bombay Stock Exchange
+	BFO ExchangeType = "BFO" // BSE Futures & Options
+	CDS ExchangeType = "CDS" // Currency Derivatives Segment
+	MCX ExchangeType = "MCX" // Multi Commodity Exchange
+)
+
+type Interval string
+
+const (
+	OneMin   Interval = "ONE_MINUTE"
+	ThreeMin Interval = "THREE_MINUTE"
+	FiveMin  Interval = "FIVE_MINUTE"
+	TenMin   Interval = "TEN_MINUTE"
+	FifteenMin Interval = "FIFTEEN_MINUTE"
+	ThirtyMin  Interval = "THIRTY_MINUTE"
+	OneHour	Interval = "ONE_HOUR"
+	Oneday	Interval = "ONE_DAY"
+)
+
+
+
+func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symboltoken string, interval Interval, fromdate string, todate string) {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
@@ -23,9 +49,9 @@ func getCandleData(apikey string, jwtToken string, exchange string, symboltoken 
 	method := "POST"
 
 	payload := strings.NewReader(`{
-      "exchange": "` + exchange + `",
+      "exchange": "` + string(exchange) + `",
       "symboltoken": "` + symboltoken + `",
-      "interval": "` + interval + `",
+      "interval": "` + string(interval) + `",
       "fromdate": "` + fromdate + `",
       "todate": "` + todate + `"
  	}`)
@@ -67,6 +93,16 @@ func getCandleData(apikey string, jwtToken string, exchange string, symboltoken 
 	fmt.Println("Saved response to response.json")
 
 }
+
+// Only for Derivatives (FNO) instruments
+// func getHistoricalOIData() {
+// 	err := godotenv.Load()
+// 	if err != nil {
+// 		fmt.Println("Error loading .env file")
+// 		return
+// 	}
+
+// }
 
 // func main() {
 // 	getCandleData()
