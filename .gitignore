@@ -1,0 +1,46 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+dictionary.json
+# Build output directories
+/bin/
+/pkg/
+/dist/
+/build/
+
+# Dependency directories (uncomment if you vendor dependencies)
+/vendor/
+/Godeps/
+
+# Go workspace and toolfiles
+go.work
+go.work.sum
+coverage.out
+*.cover
+*.coverprofile
+*.prof
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# Editor temporary files
+*~
+*.swp
+._*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Environment and local config
+.env
+.env.local
