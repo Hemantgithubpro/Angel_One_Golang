@@ -5,13 +5,14 @@
 package main
 
 import (
+	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/gorilla/websocket"
+	"fmt"
 )
 
 // Config represents target URLs
@@ -37,11 +38,15 @@ type StreamRequest struct {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Errorf("error loading .env file: %v", err)
+	}
 	// Retrieve credentials from environment variables
 	jwt_token := os.Getenv("jwt_token")
 	api_key := os.Getenv("API_KEY")
-	client_code := os.Getenv("CLIENT_CODE")
-	feed_token := os.Getenv("FEED_TOKEN")
+	client_code := os.Getenv("CLIENT_ID")
+	feed_token := os.Getenv("feed_token")
 
 	if jwt_token == "" || api_key == "" || client_code == "" || feed_token == "" {
 		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_CODE, FEED_TOKEN")
@@ -74,6 +79,7 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 		log.Fatalf("Dial failed: %v", err)
 	}
 	defer conn.Close()
+
 	log.Println("Connected to WebSocket.")
 
 	// --- STEP 2: Subscribe ---
@@ -86,12 +92,9 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 			TokenList: []TokenInfo{
 				{
 					ExchangeType: 1, // NSE
-					Tokens:       []string{"10626", "5290"},
+					Tokens:       []string{"99926000"}, // Nifty 50
 				},
-				{
-					ExchangeType: 5, // MCX
-					Tokens:       []string{"234230", "234235", "234219"},
-				},
+				
 			},
 		},
 	}
@@ -117,6 +120,7 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 				return
 			}
 			// In a real app, you would parse the binary message here
+			
 			log.Printf("Received message of %d bytes", len(message))
 		}
 	}()
