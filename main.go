@@ -61,11 +61,18 @@ func main() {
 
 	clientCode = clientCode+feedToken // just to avoid unused variable error
 
-	exchange := NSE
-	symboltoken := "2885"
-	interval := OneHour
-	fromdate := "2026-02-01 00:00"
-	todate := "2026-02-02 23:59"
-	getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
+	// exchange := NSE
+	// symboltoken := "2885"
+	// interval := OneHour
+	// fromdate := "2026-02-01 00:00"
+	// todate := "2026-02-02 23:59"
+	// getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
 
+
+	exchange:= NFO
+	symboltoken := "48178"
+	interval := FifteenMin
+	fromdate := "2026-01-01 00:00"
+	todate := "2026-02-01 23:59"
+	getHistoricalOIData(apikey, jwtToken, exchange, symboltoken, interval, fromdate, todate)
 }
