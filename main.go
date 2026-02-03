@@ -60,11 +60,12 @@ func main() {
 	// g(jwtToken, apikey, clientCode, feedToken)
 
 	clientCode = clientCode+feedToken // just to avoid unused variable error
+
 	exchange := NSE
-	symboltoken := "99926000"
-	interval := OneMin
-	fromdate := "2026-01-09"
-	todate := "2026-01-31"
+	symboltoken := "2885"
+	interval := OneHour
+	fromdate := "2026-02-01 00:00"
+	todate := "2026-02-02 23:59"
 	getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
 
 }

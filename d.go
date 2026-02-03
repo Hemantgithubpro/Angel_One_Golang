@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 type ExchangeType string
@@ -23,17 +27,22 @@ const (
 type Interval string
 
 const (
-	OneMin   Interval = "ONE_MINUTE"
-	ThreeMin Interval = "THREE_MINUTE"
-	FiveMin  Interval = "FIVE_MINUTE"
-	TenMin   Interval = "TEN_MINUTE"
+	OneMin     Interval = "ONE_MINUTE"
+	ThreeMin   Interval = "THREE_MINUTE"
+	FiveMin    Interval = "FIVE_MINUTE"
+	TenMin     Interval = "TEN_MINUTE"
 	FifteenMin Interval = "FIFTEEN_MINUTE"
 	ThirtyMin  Interval = "THIRTY_MINUTE"
-	OneHour	Interval = "ONE_HOUR"
-	Oneday	Interval = "ONE_DAY"
+	OneHour    Interval = "ONE_HOUR"
+	Oneday     Interval = "ONE_DAY"
 )
 
-
+type CandleResponse struct {
+	Status    bool            `json:"status"`
+	Message   string          `json:"message"`
+	ErrorCode string          `json:"errorcode"`
+	Data      [][]interface{} `json:"data"`
+}
 
 func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symboltoken string, interval Interval, fromdate string, todate string) {
 	err := godotenv.Load()
@@ -86,11 +95,53 @@ func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symbol
 		fmt.Println("Read error:", err)
 		return
 	}
-	if err := os.WriteFile("response.json", body, 0644); err != nil {
-		fmt.Println("File write error:", err)
+	var candleRes CandleResponse
+	if err := json.Unmarshal(body, &candleRes); err != nil {
+		fmt.Println("JSON Unmarshal error:", err)
 		return
 	}
-	fmt.Println("Saved response to response.json")
+
+	if !candleRes.Status {
+		fmt.Println("API returned error:", candleRes.Message)
+		return
+	}
+
+	csvFile, err := os.Create("data.csv")
+	if err != nil {
+		fmt.Println("File create error:", err)
+		return
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+	defer writer.Flush()
+
+	// Write Header
+	header := []string{"Timestamp", "Open", "High", "Low", "Close", "Volume"}
+	if err := writer.Write(header); err != nil {
+		fmt.Println("CSV Header write error:", err)
+		return
+	}
+
+	for _, row := range candleRes.Data {
+		record := make([]string, len(row))
+		for i, col := range row {
+			// Convert interface{} to string
+			switch v := col.(type) {
+			case float64:
+				// Format float without scientific notation (-1 auto precision)
+				record[i] = strconv.FormatFloat(v, 'f', -1, 64)
+			default:
+				record[i] = fmt.Sprintf("%v", col)
+			}
+		}
+		if err := writer.Write(record); err != nil {
+			fmt.Println("CSV Row write error:", err)
+			return
+		}
+	}
+
+	fmt.Println("Saved response to data.csv")
 
 }
 
