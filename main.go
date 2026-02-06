@@ -7,6 +7,7 @@ import (
 	// "io"
 	"os"
 	// "strings"
+	"time"
 )
 
 func getCredentials() (string, string, string, string, error) {
@@ -59,7 +60,7 @@ func main() {
 
 	// g(jwtToken, apikey, clientCode, feedToken)
 
-	clientCode = clientCode+feedToken // just to avoid unused variable error
+	clientCode = clientCode+feedToken+apikey+jwtToken // just to avoid unused variable error
 
 	// exchange := NSE
 	// symboltoken := "2885"
@@ -69,10 +70,28 @@ func main() {
 	// getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
 
 
-	exchange:= NFO
-	symboltoken := "48178"
-	interval := FifteenMin
-	fromdate := "2026-01-30 12:00"
-	todate := "2026-02-01 12:00"
-	getHistoricalOIData(apikey, jwtToken, exchange, symboltoken, interval, fromdate, todate)
+	// exchange:= NFO
+	// symboltoken := "48178"
+	// interval := FifteenMin
+	// fromdate := "2026-01-30 12:00"
+	// todate := "2026-02-01 12:00"
+	// getHistoricalOIData(apikey, jwtToken, exchange, symboltoken, interval, fromdate, todate)
+
+
+
+
+	// getMarketData(apikey, jwtToken,NFO, "42504")
+	
+	ticker := time.NewTicker(125 * time.Millisecond)
+	defer ticker.Stop()
+	exchange:=NFO
+	symbolcode:="42522"
+	for range ticker.C {
+		// getMarketData(apikey, jwtToken,exchange, symbolcode, ltpMode)
+		// getMarketData(apikey, jwtToken,exchange, symbolcode, fullMode)
+		getMarketData(apikey, jwtToken,exchange, symbolcode, ohlcMode)
+		
+	}
+
+
 }
