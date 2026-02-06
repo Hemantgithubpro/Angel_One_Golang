@@ -2,30 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 )
 
-func b() {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Error loading .env file")
-		return
-	}
-
-	apikey := os.Getenv("API_KEY")
-	jwtToken := os.Getenv("jwt_token")
+func getLtpData(apikey string, jwtToken string, exchange string, tradingsymbol string, symboltoken string) {
+	
 
 	url := "https://apiconnect.angelone.in/rest/secure/angelbroking/order/v1/getLtpData"
 	method := "POST"
 
 	payload := strings.NewReader(`{
-        "exchange": "NSE",
-        "tradingsymbol": "SBIN-EQ",
-        "symboltoken": "3045"
+        "exchange": "` + exchange + `",
+        "tradingsymbol": "` + tradingsymbol + `",
+        "symboltoken": "` + symboltoken + `"
     }`)
 
 	client := &http.Client{}
