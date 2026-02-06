@@ -37,8 +37,6 @@ func main() {
 	// 	return
 	// }
 
-
-
 	// Create streaming request
 	// Using Nifty 50 token (99926000) on NSE (ExchangeType 1) as example
 	// req := StreamRequest{
@@ -56,20 +54,18 @@ func main() {
 	// }
 
 	// fmt.Println("Starting stream...")
-	
 
 	// g(jwtToken, apikey, clientCode, feedToken)
 
-	clientCode = clientCode+feedToken+apikey+jwtToken // just to avoid unused variable error
+	clientCode = clientCode + feedToken + apikey + jwtToken // just to avoid unused variable error
 
+	//Historical data
 	// exchange := NSE
 	// symboltoken := "2885"
 	// interval := OneHour
 	// fromdate := "2026-02-01 00:00"
 	// todate := "2026-02-02 23:59"
 	// getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
-
-
 	// exchange:= NFO
 	// symboltoken := "48178"
 	// interval := FifteenMin
@@ -78,10 +74,6 @@ func main() {
 	// getHistoricalOIData(apikey, jwtToken, exchange, symboltoken, interval, fromdate, todate)
 
 
-
-
-	// getMarketData(apikey, jwtToken,NFO, "42504")
-	
 	ticker := time.NewTicker(125 * time.Millisecond)
 	defer ticker.Stop()
 	exchange:=NFO
@@ -90,8 +82,11 @@ func main() {
 		// getMarketData(apikey, jwtToken,exchange, symbolcode, ltpMode)
 		// getMarketData(apikey, jwtToken,exchange, symbolcode, fullMode)
 		getMarketData(apikey, jwtToken,exchange, symbolcode, ohlcMode)
-		
 	}
 
+	// exchangetokenmap := map[string][]string{
+	// 	string(NSE): {"3045", "881"}, string(NFO): {"58662"},
+	// }
+	// getMarketDataofMore(apikey, jwtToken, exchangetokenmap, ltpMode)
 
 }
