@@ -91,6 +91,8 @@ func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symbol
 	}
 	defer res.Body.Close()
 
+	fmt.Println("Response code: ", res.StatusCode)
+
 	var candleRes CandleResponse
 	if err := json.NewDecoder(res.Body).Decode(&candleRes); err != nil {
 		fmt.Println("JSON Decode error:", err)

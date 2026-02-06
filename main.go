@@ -66,6 +66,14 @@ func main() {
 	// fromdate := "2026-02-01 00:00"
 	// todate := "2026-02-02 23:59"
 	// getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
+
+	// exchange := MCX
+	// symboltoken := "467013"
+	// interval := OneHour
+	// fromdate := "2026-02-01 00:00"
+	// todate := "2026-02-02 23:59"
+	// getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
+
 	// exchange:= NFO
 	// symboltoken := "48178"
 	// interval := FifteenMin
@@ -76,12 +84,12 @@ func main() {
 
 	ticker := time.NewTicker(125 * time.Millisecond)
 	defer ticker.Stop()
-	exchange:=NFO
-	symbolcode:="42522"
+	exchange := MCX
+	symbolcode := "488330"
 	for range ticker.C {
-		// getMarketData(apikey, jwtToken,exchange, symbolcode, ltpMode)
+		getMarketData(apikey, jwtToken,exchange, symbolcode, ltpMode)
 		// getMarketData(apikey, jwtToken,exchange, symbolcode, fullMode)
-		getMarketData(apikey, jwtToken,exchange, symbolcode, ohlcMode)
+		// getMarketData(apikey, jwtToken,exchange, symbolcode, ohlcMode)
 	}
 
 	// exchangetokenmap := map[string][]string{
