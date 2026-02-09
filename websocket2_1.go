@@ -56,10 +56,13 @@ func main() {
 		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_ID, FEED_TOKEN")
 	}
 
-	websocketConnection1(jwt_token, api_key, client_id, feed_token)
+	websocketConnection1(jwt_token, api_key, client_id, feed_token, 1, TokenInfo{
+		ExchangeType: 3,
+		Tokens:       []string{"99919000"},
+	})
 }
 
-func websocketConnection1(jwt_token string, api_key string, client_id string, feed_token string) {
+func websocketConnection1(jwt_token string, api_key string, client_id string, feed_token string, mode int, token TokenInfo) {
 	// --- STEP 1: Websocket Connection ---
 	log.Println("Step 1: Connecting to WebSocket...")
 
@@ -92,19 +95,20 @@ func websocketConnection1(jwt_token string, api_key string, client_id string, fe
 		CorrelationID: "abcde12345",
 		Action:        1, // Subscribe
 		Params: StreamParams{
-			Mode: 1, // LTP Mode
+			Mode: mode, // LTP Mode
 			// Mode: 2, // Quote Mode (contains LTP + ohlc + volume + buy/sell qty + atp (average traded price))
 			// Mode: 3, // Snap Quote Mode (contains everything in Quote + upper/lower circuit limits + 52 week high/low)
-			TokenList: []TokenInfo{
-				{
-					// ExchangeType: 1,                    // NSE
-					// Tokens:       []string{"99926000"}, // Nifty 50
-					// ExchangeType: 2,                    // NFO
-					// Tokens:       []string{"48236"}, // Nifty 50 Future
-					ExchangeType: 3,                    // BSE
-					Tokens:       []string{"99919000"}, // sensex
-				},
-			},
+			// TokenList: []TokenInfo{
+			// 	{
+			// 		// ExchangeType: 1,                    // NSE
+			// 		// Tokens:       []string{"99926000"}, // Nifty 50
+			// 		// ExchangeType: 2,                    // NFO
+			// 		// Tokens:       []string{"48236"}, // Nifty 50 Future
+			// 		// ExchangeType: 3,                    // BSE
+			// 		// Tokens:       []string{"99919000"}, // sensex
+			// 	},
+			// },
+			TokenList: []TokenInfo{token},
 		},
 	}
 
