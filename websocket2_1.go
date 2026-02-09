@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -56,13 +57,44 @@ func main() {
 		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_ID, FEED_TOKEN")
 	}
 
+	// --- DB & Buffer Setup ---
+	db, err := NewDatabase()
+	if err != nil {
+		log.Printf("Warning: Database connection failed (continuing without DB): %v", err)
+	} else {
+		defer db.Close()
+		log.Println("Database connected.")
+		if err := db.InitSchema(context.Background()); err != nil {
+			log.Printf("Warning: Failed to init schema: %v", err)
+		}
+	}
+
+	buffer := NewTickBuffer()
+
+	// Flush buffer to DB every 5 seconds
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			ticks := buffer.Flush()
+			if len(ticks) > 0 {
+				log.Printf("Flushing %d ticks to DB...", len(ticks))
+				if db != nil {
+					if err := db.BulkInsert(context.Background(), ticks); err != nil {
+						log.Printf("Error inserting ticks: %v", err)
+					}
+				}
+			}
+		}
+	}()
+
 	websocketConnection1(jwt_token, api_key, client_id, feed_token, 1, TokenInfo{
 		ExchangeType: 3,
 		Tokens:       []string{"99919000"},
-	})
+	}, buffer)
 }
 
-func websocketConnection1(jwt_token string, api_key string, client_id string, feed_token string, mode int, token TokenInfo) {
+func websocketConnection1(jwt_token string, api_key string, client_id string, feed_token string, mode int, token TokenInfo, buffer *TickBuffer) {
 	// --- STEP 1: Websocket Connection ---
 	log.Println("Step 1: Connecting to WebSocket...")
 
@@ -136,7 +168,7 @@ func websocketConnection1(jwt_token string, api_key string, client_id string, fe
 			if messageType == websocket.TextMessage {
 				log.Printf("Received Text: %s", string(message))
 			} else if messageType == websocket.BinaryMessage {
-				parseBinaryResponse(message)
+				parseBinaryResponse(message, buffer)
 			}
 		}
 	}()
@@ -182,7 +214,7 @@ func websocketConnection1(jwt_token string, api_key string, client_id string, fe
 	}
 }
 
-func parseBinaryResponse(data []byte) {
+func parseBinaryResponse(data []byte, buffer *TickBuffer) {
 	if len(data) == 0 {
 		return
 	}
@@ -193,34 +225,44 @@ func parseBinaryResponse(data []byte) {
 	// 1=nse_cm, 2=nse_fo, 3=bse_cm, 4=bse_fo, 5=mcx_fo, 7=ncx_fo, 13=cde_fo
 	// For simplicity using 100.0 divisor. Real implementation should check ExchangeType 13.
 
+	var tick *MarketTick
+	var err error
+
 	switch mode {
 	case 1: // LTP Mode
 		if len(data) != 51 {
 			log.Printf("Invalid LTP packet size: %d", len(data))
 			return
 		}
-		parseLTPPacket(data)
+		tick, err = parseLTPPacket(data)
 	case 2: // Quote Mode
 		if len(data) != 123 {
 			log.Printf("Invalid Quote packet size: %d", len(data))
 			return
 		}
-		parseQuotePacket(data)
+		tick, err = parseQuotePacket(data)
 	case 3: // Snap Quote Mode
 		if len(data) != 379 {
 			log.Printf("Invalid SnapQuote packet size: %d", len(data))
 			return
 		}
-		parseSnapQuotePacket(data)
+		tick, err = parseSnapQuotePacket(data)
 	default:
 		log.Printf("Unknown Subscription Mode: %d", mode)
+		return
+	}
+
+	if err != nil {
+		log.Printf("Parse error: %v", err)
+	} else if tick != nil {
+		buffer.Add(*tick)
 	}
 }
 
-func parseLTPPacket(data []byte) {
+func parseLTPPacket(data []byte) (*MarketTick, error) {
 	exchangeType := data[1]
 	token := string(bytes.Trim(data[2:27], "\x00"))
-	seqNum := int64(binary.LittleEndian.Uint64(data[27:35]))
+	// seqNum := int64(binary.LittleEndian.Uint64(data[27:35]))
 	exchangeTime := int64(binary.LittleEndian.Uint64(data[35:43]))
 	ltp := int64(binary.LittleEndian.Uint64(data[43:51]))
 
@@ -231,11 +273,15 @@ func parseLTPPacket(data []byte) {
 	realLTP := float64(ltp) / divisor
 	tm := time.UnixMilli(exchangeTime)
 
-	fmt.Printf("[LTP] Token: %s | Exch: %d | Time: %s | Price: %.2f | Seq: %d\n",
-		token, exchangeType, tm.Format("15:04:05.000"), realLTP, seqNum)
+	return &MarketTick{
+		Token:        token,
+		ExchangeType: int(exchangeType),
+		Timestamp:    tm,
+		LTP:          realLTP,
+	}, nil
 }
 
-func parseQuotePacket(data []byte) {
+func parseQuotePacket(data []byte) (*MarketTick, error) {
 	// Re-use headers from LTP part
 	exchangeType := data[1]
 	token := string(bytes.Trim(data[2:27], "\x00"))
@@ -261,24 +307,28 @@ func parseQuotePacket(data []byte) {
 
 	tm := time.UnixMilli(exchangeTime)
 
-	fmt.Printf("[QUOTE] Token: %s | Time: %s | LTP: %.2f | Open: %.2f | High: %.2f | Low: %.2f | Close: %.2f | Vol: %d | BuyQ: %.0f | SellQ: %.0f | ATP: %.2f\n",
-		token, tm.Format("15:04:05"),
-		float64(ltp)/divisor,
-		float64(openPrice)/divisor,
-		float64(highPrice)/divisor,
-		float64(lowPrice)/divisor,
-		float64(closePrice)/divisor,
-		volTraded, totalBuyQty, totalSellQty, float64(avgTradedPrice)/divisor)
+	return &MarketTick{
+		Token:          token,
+		ExchangeType:   int(exchangeType),
+		Timestamp:      tm,
+		LTP:            float64(ltp) / divisor,
+		Volume:         volTraded,
+		OpenPrice:      float64(openPrice) / divisor,
+		HighPrice:      float64(highPrice) / divisor,
+		LowPrice:       float64(lowPrice) / divisor,
+		ClosePrice:     float64(closePrice) / divisor,
+		TotalBuyQty:    totalBuyQty,
+		TotalSellQty:   totalSellQty,
+		AvgTradedPrice: float64(avgTradedPrice) / divisor,
+	}, nil
 }
 
-func parseSnapQuotePacket(data []byte) {
+func parseSnapQuotePacket(data []byte) (*MarketTick, error) {
 	// Contains everything from Quote, plus more
-	// Just reusing Quote parsing for the first part could work, but let's just parse the extra fields for now
-	// or treat it similarly.
-	// For brevity, just calling parseQuotePacket which will print the first part.
-	// Note: In real app, we'd extract the common parsing logic.
-
-	parseQuotePacket(data[0:123]) // Print the Quote part
+	tick, err := parseQuotePacket(data[0:123])
+	if err != nil {
+		return nil, err
+	}
 
 	// Extra SnapQuote fields start at 147 (after best 5 data which is 200 bytes)
 	// Best 5 Data: 147 to 347 (200 bytes)
@@ -294,9 +344,12 @@ func parseSnapQuotePacket(data []byte) {
 		divisor = 10000000.0
 	}
 
-	fmt.Printf("\t[SNAP] Upper: %.2f | Lower: %.2f | 52High: %.2f | 52Low: %.2f\n",
-		float64(upperCircuit)/divisor, float64(lowerCircuit)/divisor,
-		float64(high52)/divisor, float64(low52)/divisor)
+	tick.UpperCircuit = float64(upperCircuit) / divisor
+	tick.LowerCircuit = float64(lowerCircuit) / divisor
+	tick.High52Week = float64(high52) / divisor
+	tick.Low52Week = float64(low52) / divisor
+
+	return tick, nil
 }
 
 func mathFloat64frombits(b uint64) float64 {
