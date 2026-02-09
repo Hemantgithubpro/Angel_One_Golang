@@ -6,9 +6,7 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
-	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -17,7 +15,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/joho/godotenv"
 )
 
 // Config represents target URLs
@@ -40,58 +37,6 @@ type StreamRequest struct {
 	CorrelationID string       `json:"correlationID"`
 	Action        int          `json:"action"`
 	Params        StreamParams `json:"params"`
-}
-
-func main() {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Errorf("error loading .env file: %v", err)
-	}
-	// Retrieve credentials from environment variables
-	jwt_token := os.Getenv("jwt_token")
-	api_key := os.Getenv("API_KEY")
-	client_id := os.Getenv("CLIENT_ID")
-	feed_token := os.Getenv("feed_token")
-
-	if jwt_token == "" || api_key == "" || client_id == "" || feed_token == "" {
-		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_ID, FEED_TOKEN")
-	}
-
-	// --- DB & Buffer Setup ---
-	db, err := NewDatabase()
-	if err != nil {
-		log.Printf("Warning: Database connection failed (continuing without DB): %v", err)
-	} else {
-		defer db.Close()
-		log.Println("Database connected.")
-		if err := db.InitSchema(context.Background()); err != nil {
-			log.Printf("Warning: Failed to init schema: %v", err)
-		}
-	}
-
-	buffer := NewTickBuffer()
-
-	// Flush buffer to DB every 5 seconds
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			ticks := buffer.Flush()
-			if len(ticks) > 0 {
-				log.Printf("Flushing %d ticks to DB...", len(ticks))
-				if db != nil {
-					if err := db.BulkInsert(context.Background(), ticks); err != nil {
-						log.Printf("Error inserting ticks: %v", err)
-					}
-				}
-			}
-		}
-	}()
-
-	websocketConnection1(jwt_token, api_key, client_id, feed_token, 1, TokenInfo{
-		ExchangeType: 3,
-		Tokens:       []string{"99919000"},
-	}, buffer)
 }
 
 func websocketConnection1(jwt_token string, api_key string, client_id string, feed_token string, mode int, token TokenInfo, buffer *TickBuffer) {

@@ -1,13 +1,15 @@
+//go:build websocket_example
+
 package main
 
 import (
+	"context"
 	"fmt"
-	// "net/http"
-	"github.com/joho/godotenv"
-	// "io"
+	"log"
 	"os"
-	// "strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 func getCredentials() (string, string, string, string, error) {
@@ -18,83 +20,56 @@ func getCredentials() (string, string, string, string, error) {
 
 	apikey := os.Getenv("API_KEY")
 	jwtToken := os.Getenv("jwt_token")
-	clientCode := os.Getenv("CLIENT_CODE")
-	feedToken := os.Getenv("FEED_TOKEN")
-	return apikey, jwtToken, clientCode, feedToken, nil
+	clientId := os.Getenv("CLIENT_ID")
+	feedToken := os.Getenv("feed_token")
+	return apikey, jwtToken, clientId, feedToken, nil
 }
 
 func main() {
-	apikey, jwtToken, clientCode, feedToken, err := getCredentials()
+	apikey, jwtToken, clientId, feedToken, err := getCredentials()
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Printf("Error getting credentials: %v", err)
+		// Proceeding might fail later if vars are empty
 	}
 
-	// Connect to WebSocket
-	// conn, err := wssConnect(jwtToken, apikey, clientCode, feedToken)
-	// if err != nil {
-	// 	fmt.Printf("Error connecting to WebSocket: %v\n", err)
-	// 	return
-	// }
-
-	// Create streaming request
-	// Using Nifty 50 token (99926000) on NSE (ExchangeType 1) as example
-	// req := StreamRequest{
-	// 	CorrelationID: "test_stream_123",
-	// 	Action:        1, // Subscribe
-	// 	Params: StreamParams{
-	// 		Mode: 1, // LTP Mode
-	// 		TokenList: []TokenInfo{
-	// 			{
-	// 				ExchangeType: 1,                    // NSE
-	// 				Tokens:       []string{"99926000"}, // Nifty 50
-	// 			},
-	// 		},
-	// 	},
-	// }
-
-	// fmt.Println("Starting stream...")
-
-	// g(jwtToken, apikey, clientCode, feedToken)
-
-	clientCode = clientCode + feedToken + apikey + jwtToken // just to avoid unused variable error
-
-	//Historical data
-	// exchange := NSE
-	// symboltoken := "2885"
-	// interval := OneHour
-	// fromdate := "2026-02-01 00:00"
-	// todate := "2026-02-02 23:59"
-	// getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
-
-	// exchange := MCX
-	// symboltoken := "467013"
-	// interval := OneHour
-	// fromdate := "2026-02-01 00:00"
-	// todate := "2026-02-02 23:59"
-	// getCandleData(apikey,jwtToken,exchange,symboltoken,interval,fromdate,todate)
-
-	// exchange:= NFO
-	// symboltoken := "48178"
-	// interval := FifteenMin
-	// fromdate := "2026-01-30 12:00"
-	// todate := "2026-02-01 12:00"
-	// getHistoricalOIData(apikey, jwtToken, exchange, symboltoken, interval, fromdate, todate)
-
-
-	ticker := time.NewTicker(300 * time.Millisecond)
-	defer ticker.Stop()
-	exchange := NFO
-	symbolcode := "48236"
-	for range ticker.C {
-		getMarketData(apikey, jwtToken,exchange, symbolcode, ltpMode)
-		// getMarketData(apikey, jwtToken,exchange, symbolcode, fullMode)
-		// getMarketData(apikey, jwtToken,exchange, symbolcode, ohlcMode)
+	if jwtToken == "" || apikey == "" || clientId == "" || feedToken == "" {
+		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_ID, feed_token")
 	}
 
-	// exchangetokenmap := map[string][]string{
-	// 	string(NSE): {"3045", "881"}, string(NFO): {"48236"},
-	// }
-	// getMarketDataofMore(apikey, jwtToken, exchangetokenmap, ltpMode)
+	// --- DB & Buffer Setup ---
+	db, err := NewDatabase()
+	if err != nil {
+		log.Printf("Warning: Database connection failed (continuing without DB): %v", err)
+	} else {
+		defer db.Close()
+		log.Println("Database connected.")
+		if err := db.InitSchema(context.Background()); err != nil {
+			log.Printf("Warning: Failed to init schema: %v", err)
+		}
+	}
 
+	buffer := NewTickBuffer()
+
+	// Flush buffer to DB every 5 seconds
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			ticks := buffer.Flush()
+			if len(ticks) > 0 {
+				log.Printf("Flushing %d ticks to DB...", len(ticks))
+				if db != nil {
+					if err := db.BulkInsert(context.Background(), ticks); err != nil {
+						log.Printf("Error inserting ticks: %v", err)
+					}
+				}
+			}
+		}
+	}()
+
+	// Start WebSocket Connection
+	websocketConnection1(jwtToken, apikey, clientId, feedToken, 1, TokenInfo{
+		ExchangeType: 3,
+		Tokens:       []string{"99919000"},
+	}, buffer)
 }
