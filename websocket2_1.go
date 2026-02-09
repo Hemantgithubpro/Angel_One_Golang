@@ -92,11 +92,17 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 		CorrelationID: "abcde12345",
 		Action:        1, // Subscribe
 		Params: StreamParams{
-			Mode: 1, // LTP Mode
+			// Mode: 1, // LTP Mode
+			// Mode: 2, // Quote Mode (contains LTP + ohlc + volume + buy/sell qty + atp (average traded price))
+			Mode: 3, // Snap Quote Mode (contains everything in Quote + upper/lower circuit limits + 52 week high/low)
 			TokenList: []TokenInfo{
 				{
-					ExchangeType: 1,                    // NSE
-					Tokens:       []string{"99926000"}, // Nifty 50
+					// ExchangeType: 1,                    // NSE
+					// Tokens:       []string{"99926000"}, // Nifty 50
+					// ExchangeType: 2,                    // NFO
+					// Tokens:       []string{"48236"}, // Nifty 50 Future
+					ExchangeType: 3,                    // BSE
+					Tokens:       []string{"99919000"}, // sensex
 				},
 			},
 		},

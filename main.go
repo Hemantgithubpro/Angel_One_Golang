@@ -82,10 +82,10 @@ func main() {
 	// getHistoricalOIData(apikey, jwtToken, exchange, symboltoken, interval, fromdate, todate)
 
 
-	ticker := time.NewTicker(125 * time.Millisecond)
+	ticker := time.NewTicker(300 * time.Millisecond)
 	defer ticker.Stop()
-	exchange := MCX
-	symbolcode := "488330"
+	exchange := NFO
+	symbolcode := "48236"
 	for range ticker.C {
 		getMarketData(apikey, jwtToken,exchange, symbolcode, ltpMode)
 		// getMarketData(apikey, jwtToken,exchange, symbolcode, fullMode)
@@ -93,7 +93,7 @@ func main() {
 	}
 
 	// exchangetokenmap := map[string][]string{
-	// 	string(NSE): {"3045", "881"}, string(NFO): {"58662"},
+	// 	string(NSE): {"3045", "881"}, string(NFO): {"48236"},
 	// }
 	// getMarketDataofMore(apikey, jwtToken, exchangetokenmap, ltpMode)
 
