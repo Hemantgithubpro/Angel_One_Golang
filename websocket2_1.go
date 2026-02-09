@@ -49,17 +49,17 @@ func main() {
 	// Retrieve credentials from environment variables
 	jwt_token := os.Getenv("jwt_token")
 	api_key := os.Getenv("API_KEY")
-	client_code := os.Getenv("CLIENT_ID")
+	client_id := os.Getenv("CLIENT_ID")
 	feed_token := os.Getenv("feed_token")
 
-	if jwt_token == "" || api_key == "" || client_code == "" || feed_token == "" {
-		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_CODE, FEED_TOKEN")
+	if jwt_token == "" || api_key == "" || client_id == "" || feed_token == "" {
+		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_ID, FEED_TOKEN")
 	}
 
-	g(jwt_token, api_key, client_code, feed_token)
+	websocketConnection1(jwt_token, api_key, client_id, feed_token)
 }
 
-func g(jwt_token string, api_key string, client_code string, feed_token string) {
+func websocketConnection1(jwt_token string, api_key string, client_id string, feed_token string) {
 	// --- STEP 1: Websocket Connection ---
 	log.Println("Step 1: Connecting to WebSocket...")
 
@@ -71,7 +71,7 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 	headers := http.Header{}
 	headers.Add("Authorization", jwt_token)
 	headers.Add("x-api-key", api_key)
-	headers.Add("x-client-code", client_code)
+	headers.Add("x-client-code", client_id)
 	headers.Add("x-feed-token", feed_token)
 
 	// Dial the connection
@@ -92,9 +92,9 @@ func g(jwt_token string, api_key string, client_code string, feed_token string) 
 		CorrelationID: "abcde12345",
 		Action:        1, // Subscribe
 		Params: StreamParams{
-			// Mode: 1, // LTP Mode
+			Mode: 1, // LTP Mode
 			// Mode: 2, // Quote Mode (contains LTP + ohlc + volume + buy/sell qty + atp (average traded price))
-			Mode: 3, // Snap Quote Mode (contains everything in Quote + upper/lower circuit limits + 52 week high/low)
+			// Mode: 3, // Snap Quote Mode (contains everything in Quote + upper/lower circuit limits + 52 week high/low)
 			TokenList: []TokenInfo{
 				{
 					// ExchangeType: 1,                    // NSE
