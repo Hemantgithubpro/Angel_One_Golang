@@ -1,4 +1,3 @@
-//go:build websocket_example
 
 package main
 

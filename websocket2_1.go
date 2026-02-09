@@ -1,4 +1,3 @@
-//go:build websocket_example
 
 // Simple Websocket connection and subscription example. make http request first to get tokens
 

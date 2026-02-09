@@ -54,7 +54,7 @@ type OIResponse struct {
 }
 
 func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symboltoken string, interval Interval, fromdate string, todate string) {
-
+	// date format: "2026-01-01 12:00", "YYYY-MM-DD HH:MM"
 	url := "https://apiconnect.angelone.in/rest/secure/angelbroking/historical/v1/getCandleData"
 	method := "POST"
 
@@ -221,4 +221,33 @@ func getHistoricalOIData(apikey string, jwtToken string, exchange ExchangeType, 
 	}
 
 	fmt.Println("Saved OI response to oi_data.csv")
+}
+
+
+func saveinCSV(filename string, data [][]any) error {
+	csvFile, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("file create error: %v", err)
+	}
+	defer csvFile.Close()
+	
+	writer := csv.NewWriter(csvFile)
+	defer writer.Flush()
+
+	for _, row := range data {
+		record := make([]string, len(row))
+		for i, col := range row {
+			switch v := col.(type) {
+			case float64:
+				record[i] = strconv.FormatFloat(v, 'f', -1, 64)
+			default:
+				record[i] = fmt.Sprintf("%v", col)
+			}
+		}
+		if err := writer.Write(record); err != nil {
+			return fmt.Errorf("CSV Row write error: %v", err)
+		}
+	}
+
+	return nil
 }
