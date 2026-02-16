@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -92,51 +93,10 @@ func getCandleData(apikey string, jwtToken string, exchange ExchangeType, symbol
 	defer res.Body.Close()
 
 	fmt.Println("Response code: ", res.StatusCode)
-
-	var candleRes CandleResponse
-	if err := json.NewDecoder(res.Body).Decode(&candleRes); err != nil {
-		fmt.Println("JSON Decode error:", err)
+	// fmt.Println("Response: ",res.Body)
+	if err := saveCandleResponse(res.Body, "data.csv"); err != nil {
+		fmt.Println(err)
 		return
-	}
-
-	if !candleRes.Status {
-		fmt.Println("API returned error:", candleRes.Message)
-		return
-	}
-
-	csvFile, err := os.Create("data.csv")
-	if err != nil {
-		fmt.Println("File create error:", err)
-		return
-	}
-	defer csvFile.Close()
-
-	writer := csv.NewWriter(csvFile)
-	defer writer.Flush()
-
-	// Write Header
-	header := []string{"Timestamp", "Open", "High", "Low", "Close", "Volume"}
-	if err := writer.Write(header); err != nil {
-		fmt.Println("CSV Header write error:", err)
-		return
-	}
-
-	for _, row := range candleRes.Data {
-		record := make([]string, len(row))
-		for i, col := range row {
-			// Convert interface{} to string
-			switch v := col.(type) {
-			case float64:
-				// Format float without scientific notation (-1 auto precision)
-				record[i] = strconv.FormatFloat(v, 'f', -1, 64)
-			default:
-				record[i] = fmt.Sprintf("%v", col)
-			}
-		}
-		if err := writer.Write(record); err != nil {
-			fmt.Println("CSV Row write error:", err)
-			return
-		}
 	}
 
 	fmt.Println("Saved response to data.csv")
@@ -223,14 +183,13 @@ func getHistoricalOIData(apikey string, jwtToken string, exchange ExchangeType, 
 	fmt.Println("Saved OI response to oi_data.csv")
 }
 
-
 func saveinCSV(filename string, data [][]any) error {
 	csvFile, err := os.Create(filename)
 	if err != nil {
 		return fmt.Errorf("file create error: %v", err)
 	}
 	defer csvFile.Close()
-	
+
 	writer := csv.NewWriter(csvFile)
 	defer writer.Flush()
 
@@ -239,6 +198,51 @@ func saveinCSV(filename string, data [][]any) error {
 		for i, col := range row {
 			switch v := col.(type) {
 			case float64:
+				record[i] = strconv.FormatFloat(v, 'f', -1, 64)
+			default:
+				record[i] = fmt.Sprintf("%v", col)
+			}
+		}
+		if err := writer.Write(record); err != nil {
+			return fmt.Errorf("CSV Row write error: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func saveCandleResponse(r io.Reader, filename string) error {
+	var candleRes CandleResponse
+	if err := json.NewDecoder(r).Decode(&candleRes); err != nil {
+		return fmt.Errorf("JSON Decode error: %v", err)
+	}
+
+	if !candleRes.Status {
+		return fmt.Errorf("API returned error: %s", candleRes.Message)
+	}
+
+	csvFile, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("file create error: %v", err)
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+	defer writer.Flush()
+
+	// Write Header
+	header := []string{"Timestamp", "Open", "High", "Low", "Close", "Volume"}
+	if err := writer.Write(header); err != nil {
+		return fmt.Errorf("CSV Header write error: %v", err)
+	}
+
+	for _, row := range candleRes.Data {
+		record := make([]string, len(row))
+		for i, col := range row {
+			// Convert interface{} to string
+			switch v := col.(type) {
+			case float64:
+				// Format float without scientific notation (-1 auto precision)
 				record[i] = strconv.FormatFloat(v, 'f', -1, 64)
 			default:
 				record[i] = fmt.Sprintf("%v", col)
