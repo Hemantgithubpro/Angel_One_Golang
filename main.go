@@ -1,14 +1,10 @@
 package main
 
 import (
-	// "context"
 	// "fmt"
 	"log"
-	// "os"
-	// "time"
-	// "github.com/joho/godotenv"
+	
 )
-
 
 func main() {
 	apikey, jwtToken, clientId, feedToken, err := getCredentials()
@@ -20,9 +16,14 @@ func main() {
 		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_ID, feed_token")
 	}
 
-	exchange := NSE
-	symboltoken := "99926000"
-	getCandleData(apikey, jwtToken, exchange, symboltoken, ThreeMin, "2025-01-01 00:00", "2026-02-09 00:00")
+	// fmt.Println("apikey: ",apikey)
+	// fmt.Println("jwttoken: ",jwtToken)
+	// exchange := NSE
+	// symboltoken := "99926000"
+	// getCandleData(apikey, jwtToken, exchange, symboltoken, ThreeMin, "2025-01-01 00:00", "2026-02-09 00:00")
+
+	// getMarketData(apikey, jwtToken, MCX, "467013", ltpMode)
+	marketDatatoDB(apikey, jwtToken, MCX, "467013", ltpMode)
 
 	// --- DB & Buffer Setup ---
 	// db, err := NewDatabase()

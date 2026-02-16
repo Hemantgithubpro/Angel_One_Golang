@@ -3,11 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/pquerna/otp/totp"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
+	"github.com/pquerna/otp/totp"
+
 	// "reflect"
 	"strings"
 	"time"
@@ -18,11 +20,19 @@ func getCredentials() (string, string, string, string, error) {
 	if err != nil {
 		fmt.Printf("error loading .env file: %v", err)
 	}
-
+	// Read required environment variables
 	mpin := os.Getenv("MPIN")
 	clientId := os.Getenv("CLIENT_ID")
 	totp_secret := os.Getenv("TOTP_SECRET")
-	totp, err := totp.GenerateCode(totp_secret, time.Now())
+	apikey := os.Getenv("API_KEY")
+
+	// Validate env vars early
+	if mpin == "" || clientId == "" || totp_secret == "" || apikey == "" {
+		return "", "", "", "", fmt.Errorf("missing one or more required environment variables: MPIN, CLIENT_ID, TOTP_SECRET, API_KEY")
+	}
+
+	// Generate TOTP code (avoid shadowing the package name)
+	totpCode, err := totp.GenerateCode(totp_secret, time.Now())
 	if err != nil {
 		panic(err)
 	}
@@ -30,10 +40,10 @@ func getCredentials() (string, string, string, string, error) {
 	method := "POST"
 
 	payload := strings.NewReader(`{
-    "clientcode": "` + clientId + `",
-    "password": "` + mpin + `",
-	"totp":"` + totp + `",
-  	"state":"environment_variable"
+	"clientcode": "` + clientId + `",
+	"password": "` + mpin + `",
+	"totp":"` + totpCode + `",
+	"state":"environment_variable"
 	}`)
 
 	client := &http.Client{}
@@ -50,7 +60,8 @@ func getCredentials() (string, string, string, string, error) {
 	req.Header.Add("X-ClientLocalIP", "CLIENT_LOCAL_IP")
 	req.Header.Add("X-ClientPublicIP", "CLIENT_PUBLIC_IP")
 	req.Header.Add("X-MACAddress", "MAC_ADDRESS")
-	req.Header.Add("X-PrivateKey", "API_KEY")
+	// Use the real API key from environment
+	req.Header.Add("X-PrivateKey", apikey)
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -91,9 +102,15 @@ func getCredentials() (string, string, string, string, error) {
 	// fmt.Println(resp.Data.FeedToken)
 	// fmt.Println(resp.Data.State)
 
-	apikey := os.Getenv("API_KEY")
-	jwtToken := resp.Data.JwtToken
+	// Check API response for success
+	if !resp.Status {
+		return "", "", "", "", fmt.Errorf("login failed: %s", resp.Message)
+	}
+	jwtToken := string("Bearer " + resp.Data.JwtToken)
 	feedToken := resp.Data.FeedToken
+	if jwtToken == "" {
+		return "", "", "", "", fmt.Errorf("login succeeded but jwtToken empty: %s", resp.Message)
+	}
 
 	return apikey, jwtToken, clientId, feedToken, nil
 
