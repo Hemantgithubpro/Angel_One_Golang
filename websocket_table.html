@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 2 Response Table </title>
+</head>
+
+<body>
+    <table class="table table-hover table-bordered">
+        <thead>
+            <tr class="font">
+                <th tabindex="0"></th>
+                <th tabindex="0">Field</th>
+                <th tabindex="0">DataType </th>
+                <th tabindex="0">Size (in bytes) </th>
+                <th tabindex="0">Field Start Position(Index in Byte Array)</th>
+                <th tabindex="0">Description</th>
+                <th tabindex="0">Valid Values</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>Subscription Mode</td>
+                <td>byte/int8</td>
+                <td>1</td>
+                <td>0</td>
+                <td>
+                    <div><br>
+                        <ul>Subscription Type such as LTP, Quote, Snap Quote</ul>
+                    </div>
+                </td>
+                <td style="width: 50%;">
+                    <div><br>
+                        <ul>1 (LTP)</ul>
+                    </div>
+                    <div><br>
+                        <ul>2 (Quote)</ul>
+                    </div>
+                    <div><br>
+                        <ul>3 (Snap Quote)</ul>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>Exchange Type </td>
+                <td>byte/int8 </td>
+                <td>1</td>
+                <td>1 </td>
+                <td></td>
+                <td style="width: 50%;">
+                    <div><br>
+                        <ul>1 (nse_cm)</ul>
+                    </div>
+                    <div><br>
+                        <ul>2 (nse_fo)</ul>
+                    </div>
+                    <div><br>
+                        <ul>3 (bse_cm)</ul>
+                    </div>
+                    <div><br>
+                        <ul>4 (bse_fo)</ul>
+                    </div>
+                    <div><br>
+                        <ul>5 (mcx_fo)</ul>
+                    </div>
+                    <div><br>
+                        <ul>7 (ncx_fo)</ul>
+                    </div>
+                    <div><br>
+                        <ul>13 (cde_fo)</ul>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>Token</td>
+                <td>byte array</td>
+                <td>25</td>
+                <td>2 </td>
+                <td>
+                    <div><br>
+                        <ul>Token Id in characters encoded as byte array. One byte represents one utf-8 encoded
+                            character.</ul>
+                    </div>
+                    <div><br>
+                        <ul>Null char signifies the end of characters i.e. \0000u in Java</ul>
+                    </div>
+                </td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>Sequence Number</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>27</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>Exchange Timestamp</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>35</td>
+                <td>
+                    <div><br>
+                        <ul>Exchange feed timestamp in epoch milliseconds</ul>
+                    </div>
+                </td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td>Last Traded Price (LTP)(If mode is ltp, the packet ends here.packet size = 51 bytes)</td>
+                <td>int32</td>
+                <td>8</td>
+                <td>43</td>
+                <td>
+                    <div><br>
+                        <ul>All prices are in paise. For currencies, the int 32 price values should be divided by
+                            10000000.0 to obtain four decimal places. For everything else, the price values should be
+                            divided by 100.</ul>
+                    </div>
+                </td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td>Last traded quantity</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>51</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td>Average traded price</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>59</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td>Volume traded for the day</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>67</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td>Total buy quantity</td>
+                <td>double</td>
+                <td>8</td>
+                <td>75</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>11</td>
+                <td>Total sell quantity</td>
+                <td>double</td>
+                <td>8</td>
+                <td>83</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>12</td>
+                <td>Open price of the day</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>91</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>13</td>
+                <td>High price of the day</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>99</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>14</td>
+                <td>Low price of the day</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>107</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>15</td>
+                <td>Close price(If mode is quote,the packet ends here.packet size = 123 bytes)</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>115</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>16</td>
+                <td>Last traded timestamp</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>123</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>17</td>
+                <td>Open Interest</td>
+                <td>int64/long</td>
+                <td>8</td>
+                <td>131</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>18</td>
+                <td>Open Interest change % (this is a dummy field. contains garbage value)</td>
+                <td>double</td>
+                <td>8</td>
+                <td>139</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>19</td>
+                <td>Best Five Data</td>
+                <td>Array containing 10 packets. Each packet having 20 bytes.</td>
+                <td>200</td>
+                <td>147</td>
+                <td>
+                    <div><br>
+                        <ul>sequence of best five buys data,followed by best five sells.(refer Section-2) Best Five
+                            Data)</ul>
+                    </div>
+                </td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>20</td>
+                <td>Upper circuit limit </td>
+                <td></td>
+                <td>8</td>
+                <td>347</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>21</td>
+                <td>Lower circuit limit</td>
+                <td></td>
+                <td>8</td>
+                <td>355</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>22</td>
+                <td>52 week high price</td>
+                <td></td>
+                <td>8</td>
+                <td>363</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+            <tr>
+                <td>23</td>
+                <td>52 week low price(If mode is snapquote, the packet ends here. packet size = 379 bytes)</td>
+                <td></td>
+                <td>8</td>
+                <td>371</td>
+                <td></td>
+                <td style="width: 50%;"></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>
