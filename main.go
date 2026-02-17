@@ -2,9 +2,9 @@ package main
 
 import (
 	// "fmt"
+	"context"
 	"log"
 	"time"
-	"context"
 )
 
 func main() {
@@ -85,10 +85,15 @@ func main() {
 	}()
 
 	// Start WebSocket Connection
-	websocketConnection1(jwtToken, apikey, clientId, feedToken, 1, TokenInfo{
-		ExchangeType: 1,                    // NSE
-		Tokens:       []string{"99926000"},
-	}, buffer)
+	tokens := []TokenInfo{
+		// {ExchangeType: 1, Tokens: []string{"99926000","2885"}},
+		// {ExchangeType: 3, Tokens: []string{"99919000"}},
+		// {ExchangeType: 2, Tokens: []string{"64862"}},
+		{ExchangeType: 1, Tokens: []string{"2885"}},
+	}
+	websocketConnectiontoDB(jwtToken, apikey, clientId, feedToken, 2, tokens, buffer)
 
 	// trydb()
+
+	// websocketprint(jwtToken, apikey, clientId, feedToken, 2, tokens)
 }
