@@ -1,4 +1,3 @@
-
 // Simple Websocket connection and subscription example. make http request first to get tokens
 
 package main
@@ -71,7 +70,7 @@ func websocketConnection1(jwt_token string, api_key string, client_id string, fe
 		CorrelationID: "abcde12345",
 		Action:        1, // Subscribe
 		Params: StreamParams{
-			Mode: mode, // LTP Mode
+			Mode: mode, // 1 LTP Mode
 			// Mode: 2, // Quote Mode (contains LTP + ohlc + volume + buy/sell qty + atp (average traded price))
 			// Mode: 3, // Snap Quote Mode (contains everything in Quote + upper/lower circuit limits + 52 week high/low)
 			// TokenList: []TokenInfo{
@@ -109,9 +108,10 @@ func websocketConnection1(jwt_token string, api_key string, client_id string, fe
 				return
 			}
 
-			if messageType == websocket.TextMessage {
+			switch messageType {
+			case websocket.TextMessage:
 				log.Printf("Received Text: %s", string(message))
-			} else if messageType == websocket.BinaryMessage {
+			case websocket.BinaryMessage:
 				parseBinaryResponse(message, buffer)
 			}
 		}

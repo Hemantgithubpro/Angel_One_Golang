@@ -1,14 +1,13 @@
-
 package main
 
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
+	"os"
+	"time"
 )
 
 type Database struct {
@@ -16,9 +15,9 @@ type Database struct {
 }
 
 func NewDatabase() (*Database, error) {
-	connStr := os.Getenv("DATABASE_URL")
+	connStr := os.Getenv("DB_URL")
 	if connStr == "" {
-		return nil, fmt.Errorf("DATABASE_URL environment variable is required")
+		return nil, fmt.Errorf("DB_URL environment variable is required")
 	}
 
 	config, err := pgxpool.ParseConfig(connStr)
@@ -57,6 +56,28 @@ func (db *Database) InitSchema(ctx context.Context) error {
 	return err
 }
 
+func (db *Database) InsertTick(ctx context.Context, tick MarketTick) error {
+	query := `
+	INSERT INTO market_ticks (token, exchange_type, timestamp, price, volume, open_price, high_price, low_price, close_price, total_buy_qty, total_sell_qty, avg_traded_price)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	`
+	_, err := db.Pool.Exec(ctx, query,
+		tick.Token,
+		tick.ExchangeType,
+		tick.Timestamp,
+		tick.LTP,
+		tick.Volume,
+		tick.OpenPrice,
+		tick.HighPrice,
+		tick.LowPrice,
+		tick.ClosePrice,
+		tick.TotalBuyQty,
+		tick.TotalSellQty,
+		tick.AvgTradedPrice,
+	)
+	return err
+}
+
 func (db *Database) BulkInsert(ctx context.Context, ticks []MarketTick) error {
 	if len(ticks) == 0 {
 		return nil
@@ -92,4 +113,38 @@ func (db *Database) BulkInsert(ctx context.Context, ticks []MarketTick) error {
 
 func (db *Database) Close() {
 	db.Pool.Close()
+}
+
+func trydb() {
+	// make databse connection and initialize schema
+	db, err := NewDatabase()
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+	defer db.Close()
+
+	ctx := context.Background()
+	if err := db.InitSchema(ctx); err != nil {
+		log.Fatal("Failed to initialize schema:", err)
+	}
+
+	sampleTick := MarketTick{
+		Token:          "99919000",
+		ExchangeType:   3,
+		Timestamp:      time.Now(),
+		LTP:            100.5,
+		Volume:         1000,
+		OpenPrice:      99.0,
+		HighPrice:      101.0,
+		LowPrice:       98.5,
+		ClosePrice:     100.5,
+		TotalBuyQty:    5000,
+		TotalSellQty:   4500,
+		AvgTradedPrice: 100.0,
+	}
+	if err := db.InsertTick(ctx, sampleTick); err != nil {
+		log.Fatal("Failed to insert sample tick:", err)
+	}
+
+
 }
