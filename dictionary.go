@@ -9,7 +9,7 @@ import (
 	// "strings"
 )
 
-func e() {
+func getdictionary() {
 	url := "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
 
 	client := &http.Client{}

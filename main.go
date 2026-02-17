@@ -2,8 +2,9 @@ package main
 
 import (
 	// "fmt"
+	"fmt"
 	"log"
-	
+	"time"
 )
 
 func main() {
@@ -18,12 +19,39 @@ func main() {
 
 	// fmt.Println("apikey: ",apikey)
 	// fmt.Println("jwttoken: ",jwtToken)
-	// exchange := NSE
-	// symboltoken := "99926000"
+	exchange := NSE
+	symboltoken := "99926000"
 	// getCandleData(apikey, jwtToken, exchange, symboltoken, ThreeMin, "2025-01-01 00:00", "2026-02-09 00:00")
 
 	// getMarketData(apikey, jwtToken, MCX, "467013", ltpMode)
-	marketDatatoDB(apikey, jwtToken, MCX, "467013", ltpMode)
+
+	// for i := 0; ; i++ {
+	// 	fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
+	// 	// Simulate a delay between API calls (e.g., 300ms)
+	// 	time.Sleep(300 * time.Millisecond)
+	// }
+
+	ticker := time.NewTicker(300 * time.Millisecond)
+	defer ticker.Stop()
+
+	// inFlight := false
+
+	// for range ticker.C {
+	// 	if inFlight {
+	// 		continue
+	// 	}
+	// 	inFlight = true
+
+	// 	go func() {
+	// 		fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
+	// 		inFlight = false
+	// 	}()
+	// }
+	for range ticker.C {
+		go func() {
+			fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
+		}()
+	}
 
 	// --- DB & Buffer Setup ---
 	// db, err := NewDatabase()

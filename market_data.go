@@ -32,7 +32,7 @@ type QuoteResponse struct {
 	Message   string `json:"message"`
 	Errorcode string `json:"errorcode"`
 	Data      struct {
-		Fetched   []MarketItem `json:"fetched"`
+		Fetched []MarketItem `json:"fetched"`
 		// Unfetched []string     `json:"unfetched"`
 	} `json:"data"`
 }
@@ -204,7 +204,7 @@ func getMarketDataofMore(apikey string, jwtToken string, exchangeTokens map[stri
 	// fmt.Println("Saved response to market_data.csv")
 }
 
-func marketDatatoDB(apikey string, jwtToken string, exchange ExchangeType, symboltoken string, currentmode mode) {
+func marketDatatoDB(apikey string, jwtToken string, exchange ExchangeType, symboltoken string, currentmode mode) (exchangeName string, tradingSymbol string, symbolToken string, ltp float64, err error) {
 
 	url := "https://apiconnect.angelone.in/rest/secure/angelbroking/market/v1/quote/"
 	method := "POST"
@@ -220,7 +220,7 @@ func marketDatatoDB(apikey string, jwtToken string, exchange ExchangeType, symbo
 	req, err := http.NewRequest(method, url, payload)
 	if err != nil {
 		fmt.Println("Request creation error:", err)
-		return
+		return "", "", "", 0, err
 	}
 
 	// Add headers
@@ -237,34 +237,61 @@ func marketDatatoDB(apikey string, jwtToken string, exchange ExchangeType, symbo
 	res, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Request error:", err)
-		return
+		return "", "", "", 0, err
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return "", "", "", 0, err
 	}
 	// fmt.Println("Response Status:", res.Status)
 	// fmt.Println("Response Body:", string(body))
 
-	// Saving the response to CSV (optional)
+	// return json.Unmarshal(body, &response)
+
 	var response QuoteResponse
 	if err := json.Unmarshal(body, &response); err != nil {
 		fmt.Println("JSON Unmarshal error:", err)
-		return
+		return "", "", "", 0, err
 	}
 
 	if !response.Status {
 		fmt.Println("API returned error:", response.Message)
-		return
+		return "", "", "", 0, fmt.Errorf(response.Message)
+
 	}
 
-	if err := saveToCSV("market_data.csv", response.Data.Fetched); err != nil {
-		fmt.Println("Error saving CSV:", err)
-		return
+	if len(response.Data.Fetched) == 0 {
+		fmt.Println("No data fetched for the given symbol token.")
+		return "", "", "", 0, fmt.Errorf("no data fetched for symbol token")
 	}
 
-	fmt.Println("Saved response to market_data.csv")
+	item := response.Data.Fetched[0]
+	exchangeName = item.Exchange
+	tradingSymbol = item.TradingSymbol
+	symbolToken = item.SymbolToken
+	ltp = item.Ltp
+
+	return exchangeName, tradingSymbol, symbolToken, ltp, nil
+
+	// Saving the response to CSV (optional)
+	// var response QuoteResponse
+	// if err := json.Unmarshal(body, &response); err != nil {
+	// 	fmt.Println("JSON Unmarshal error:", err)
+	// 	return
+	// }
+
+	// if !response.Status {
+	// 	fmt.Println("API returned error:", response.Message)
+	// 	return
+	// }
+
+	// if err := saveToCSV("market_data.csv", response.Data.Fetched); err != nil {
+	// 	fmt.Println("Error saving CSV:", err)
+	// 	return
+	// }
+
+	// fmt.Println("Saved response to market_data.csv")
 }
