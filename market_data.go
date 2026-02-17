@@ -259,7 +259,7 @@ func marketDatatoDB(apikey string, jwtToken string, exchange ExchangeType, symbo
 
 	if !response.Status {
 		fmt.Println("API returned error:", response.Message)
-		return "", "", "", 0, fmt.Errorf(response.Message)
+		return "", "", "", 0, fmt.Errorf("%s", response.Message)
 
 	}
 
