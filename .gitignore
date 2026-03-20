@@ -47,3 +47,5 @@ Thumbs.db
 *.json
 *.csv
 later.md
+
+/.gocache/

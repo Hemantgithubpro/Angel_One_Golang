@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Simple Websocket connection and subscription example. make http request first to get tokens
 
 package main

@@ -1,99 +1,114 @@
+//go:build ignore
+
 package main
 
 import (
-	// "fmt"
-	"context"
-	"log"
+	"fmt"
+	// "context"
+	// "log"
 	"time"
 )
 
 func main() {
-	apikey, jwtToken, clientId, feedToken, err := getCredentials()
-	if err != nil {
-		log.Printf("Error getting credentials: %v", err)
-	}
-
-	if jwtToken == "" || apikey == "" || clientId == "" || feedToken == "" {
-		log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_ID, feed_token")
-	}
-
-	// // fmt.Println("apikey: ",apikey)
-	// // fmt.Println("jwttoken: ",jwtToken)
-	// exchange := NSE
-	// symboltoken := "99926000"
-	// // getCandleData(apikey, jwtToken, exchange, symboltoken, ThreeMin, "2025-01-01 00:00", "2026-02-09 00:00")
-
-	// // getMarketData(apikey, jwtToken, MCX, "467013", ltpMode)
-
-	// // for i := 0; ; i++ {
-	// // 	fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
-	// // 	// Simulate a delay between API calls (e.g., 300ms)
-	// // 	time.Sleep(300 * time.Millisecond)
-	// // }
-
-	// ticker := time.NewTicker(300 * time.Millisecond)
-	// defer ticker.Stop()
-
-	// // inFlight := false
-
-	// // for range ticker.C {
-	// // 	if inFlight {
-	// // 		continue
-	// // 	}
-	// // 	inFlight = true
-
-	// // 	go func() {
-	// // 		fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
-	// // 		inFlight = false
-	// // 	}()
-	// // }
-	// for range ticker.C {
-	// 	go func() {
-	// 		fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
-	// 	}()
+	// apikey, jwtToken, clientId, feedToken, err := getCredentials()
+	// if err != nil {
+	// 	log.Printf("Error getting credentials: %v", err)
 	// }
 
-	// --- DB & Buffer Setup ---
-	db, err := NewDatabase()
-	if err != nil {
-		log.Printf("Warning: Database connection failed (continuing without DB): %v", err)
-	} else {
-		defer db.Close()
-		log.Println("Database connected.")
-		if err := db.InitSchema(context.Background()); err != nil {
-			log.Printf("Warning: Failed to init schema: %v", err)
-		}
-	}
+	// if jwtToken == "" || apikey == "" || clientId == "" || feedToken == "" {
+	// 	log.Fatal("Missing required environment variables: jwt_token, API_KEY, CLIENT_ID, feed_token")
+	// }
 
-	buffer := NewTickBuffer()
+	// // // fmt.Println("apikey: ",apikey)
+	// // // fmt.Println("jwttoken: ",jwtToken)
+	// // exchange := NSE
+	// // symboltoken := "99926000"
+	// // // getCandleData(apikey, jwtToken, exchange, symboltoken, ThreeMin, "2025-01-01 00:00", "2026-02-09 00:00")
 
-	// Flush buffer to DB every 5 seconds
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			ticks := buffer.Flush()
-			if len(ticks) > 0 {
-				log.Printf("Flushing %d ticks to DB...", len(ticks))
-				if db != nil {
-					if err := db.BulkInsert(context.Background(), ticks); err != nil {
-						log.Printf("Error inserting ticks: %v", err)
-					}
-				}
-			}
-		}
-	}()
+	// // // getMarketData(apikey, jwtToken, MCX, "467013", ltpMode)
 
-	// Start WebSocket Connection
-	tokens := []TokenInfo{
-		{ExchangeType: 1, Tokens: []string{"99926000","2885"}}, // nifty 50, reliance nse
-		{ExchangeType: 3, Tokens: []string{"99919000"}}, // sensex bse
-		{ExchangeType: 2, Tokens: []string{"64862"}}, // nfo 
-		// {ExchangeType: 1, Tokens: []string{"2885"}},
-	}
-	websocketConnectiontoDB(jwtToken, apikey, clientId, feedToken, 2, tokens, buffer)
+	// // // for i := 0; ; i++ {
+	// // // 	fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
+	// // // 	// Simulate a delay between API calls (e.g., 300ms)
+	// // // 	time.Sleep(300 * time.Millisecond)
+	// // // }
+
+	// // ticker := time.NewTicker(300 * time.Millisecond)
+	// // defer ticker.Stop()
+
+	// // // inFlight := false
+
+	// // // for range ticker.C {
+	// // // 	if inFlight {
+	// // // 		continue
+	// // // 	}
+	// // // 	inFlight = true
+
+	// // // 	go func() {
+	// // // 		fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
+	// // // 		inFlight = false
+	// // // 	}()
+	// // // }
+	// // for range ticker.C {
+	// // 	go func() {
+	// // 		fmt.Println(marketDatatoDB(apikey, jwtToken, exchange, symboltoken, ltpMode))
+	// // 	}()
+	// // }
+
+	// // --- DB & Buffer Setup ---
+	// db, err := NewDatabase()
+	// if err != nil {
+	// 	log.Printf("Warning: Database connection failed (continuing without DB): %v", err)
+	// } else {
+	// 	defer db.Close()
+	// 	log.Println("Database connected.")
+	// 	if err := db.InitSchema(context.Background()); err != nil {
+	// 		log.Printf("Warning: Failed to init schema: %v", err)
+	// 	}
+	// }
+
+	// buffer := NewTickBuffer()
+
+	// // Flush buffer to DB every 5 seconds
+	// go func() {
+	// 	ticker := time.NewTicker(5 * time.Second)
+	// 	defer ticker.Stop()
+	// 	for range ticker.C {
+	// 		ticks := buffer.Flush()
+	// 		if len(ticks) > 0 {
+	// 			log.Printf("Flushing %d ticks to DB...", len(ticks))
+	// 			if db != nil {
+	// 				if err := db.BulkInsert(context.Background(), ticks); err != nil {
+	// 					log.Printf("Error inserting ticks: %v", err)
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }()
+
+	// // Start WebSocket Connection
+	// tokens := []TokenInfo{
+	// 	{ExchangeType: 1, Tokens: []string{"99926000","2885"}}, // nifty 50, reliance nse
+	// 	{ExchangeType: 3, Tokens: []string{"99919000"}}, // sensex bse
+	// 	{ExchangeType: 2, Tokens: []string{"64862"}}, // nfo 
+	// 	// {ExchangeType: 1, Tokens: []string{"2885"}},
+	// }
+	// websocketConnectiontoDB(jwtToken, apikey, clientId, feedToken, 2, tokens, buffer)
 
 	// trydb()
 
 	// websocketprint(jwtToken, apikey, clientId, feedToken, 2, tokens)
+
+	// datetime:=time.Now().Format("2006-01-02 15:04:05")
+	// date:=time.Now().Format("2006-01-02")
+	// dt:= time.Now().Format(time.RFC3339)
+	// fmt.Println("Date and time:", date)
+	// fmt.Println("RFC3339 format:", dt)
+
+
+	date := time.Now().Format("2006-01-02")
+	datetimestart:= date + " 03:44:59"
+	fmt.Println("Date and time:", datetimestart)
+	fmt.Printf("%T\n", datetimestart)
+	fmt.Printf("%T\n", date)
 }

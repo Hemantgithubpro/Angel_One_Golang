@@ -1,7 +1,10 @@
+//go:build ignore
+
 package main
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -146,5 +149,68 @@ func trydb() {
 		log.Fatal("Failed to insert sample tick:", err)
 	}
 
+}
 
+func exportDatatoCSV(db *Database) error {
+	ctx := context.Background()
+	date := time.Now().Format("2006-01-02")
+	datetimestart:= date + " 03:44:59"
+	datetimeend:= date + ""
+
+	rows, err := db.Pool.Query(ctx, "SELECT token, exchange_type, timestamp, price, volume, open_price, high_price, low_price, close_price, total_buy_qty, total_sell_qty, avg_traded_price FROM market_ticks")
+	if err != nil {
+		return fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	filename := fmt.Sprintf("market_ticks_%s.csv", date)
+	// Create CSV file
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create CSV file: %w", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write CSV headers
+	headers := []string{"id", "token", "exchange_type", "timestamp", "price", "volume", "open_price", "high_price", "low_price", "close_price", "total_buy_qty", "total_sell_qty", "avg_traded_price", "created_at"}
+	if err := writer.Write(headers); err != nil {
+		return fmt.Errorf("failed to write CSV headers: %w", err)
+	}
+
+	// Write rows
+	for rows.Next() {
+		var id int64
+		var token string
+		var exchangeType int
+		var timestamp time.Time
+		var price float64
+		var volume int64
+		var openPrice float64
+		var highPrice float64
+		var lowPrice float64
+		var closePrice float64
+		var totalBuyQty int64
+		var totalSellQty int64
+		var avgTradedPrice float64
+		var createdAt time.Time
+
+		if err := rows.Scan(&id, &token, &exchangeType, &timestamp, &price, &volume, &openPrice, &highPrice, &lowPrice, &closePrice, &totalBuyQty, &totalSellQty, &avgTradedPrice, &createdAt); err != nil {
+			return fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		row := []string{fmt.Sprintf("%d", id), token, fmt.Sprintf("%d", exchangeType), timestamp.Format(time.RFC3339), fmt.Sprintf("%.2f", price), fmt.Sprintf("%d", volume), fmt.Sprintf("%.2f", openPrice), fmt.Sprintf("%.2f", highPrice), fmt.Sprintf("%.2f", lowPrice), fmt.Sprintf("%.2f", closePrice), fmt.Sprintf("%d", totalBuyQty), fmt.Sprintf("%d", totalSellQty), fmt.Sprintf("%.2f", avgTradedPrice), createdAt.Format(time.RFC3339)}
+		if err := writer.Write(row); err != nil {
+			return fmt.Errorf("failed to write row: %w", err)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	log.Printf("Successfully exported data to CSV file: %s", filename)
+	return nil
 }
